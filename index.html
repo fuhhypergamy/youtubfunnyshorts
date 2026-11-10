@@ -61,6 +61,22 @@
       display: none;
     }
 
+    .error-title,
+    .error-copy {
+      max-width: 420px;
+      margin: 0;
+      color: #f5f5f5;
+    }
+
+    .error-title {
+      font-size: clamp(1.7rem, 6vw, 2.5rem);
+      line-height: 1.15;
+    }
+
+    .error-copy {
+      line-height: 1.55;
+    }
+
     .spinner {
       width: 42px;
       height: 42px;
@@ -126,6 +142,8 @@
     </video>
     <section class="start-screen" id="start-screen" data-state="loading" aria-live="polite">
       <div class="spinner" role="status" aria-label="Loading video"></div>
+      <h1 class="error-title">Error 404</h1>
+      <p class="error-copy">Something went wrong here, please try again.</p>
       <button class="start-button" id="start-button" type="button">Try again</button>
       <p class="playback-error" id="playback-error" role="status" hidden></p>
     </section>
