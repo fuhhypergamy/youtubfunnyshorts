@@ -76,22 +76,6 @@
       }
     }
 
-    .start-copy {
-      max-width: 420px;
-      margin: 0;
-      color: #242424;
-      line-height: 1.55;
-    }
-
-    h1.start-copy {
-      font-size: clamp(1.7rem, 6vw, 2.5rem);
-      line-height: 1.15;
-    }
-
-    #disclosure {
-      max-width: 440px;
-    }
-
     .start-button {
       min-height: 48px;
       padding: 11px 22px;
@@ -109,7 +93,13 @@
       outline-offset: 3px;
     }
 
-    .start-screen[data-state="loading"] .start-copy,
+    .playback-error {
+      max-width: 420px;
+      margin: 0;
+      color: #242424;
+      line-height: 1.5;
+    }
+
     .start-screen[data-state="loading"] .start-button {
       display: none;
     }
@@ -136,17 +126,16 @@
     </video>
     <section class="start-screen" id="start-screen" data-state="loading" aria-live="polite">
       <div class="spinner" role="status" aria-label="Loading video"></div>
-      <h1 class="start-copy" id="start-copy">Oops! Something went wrong (404)</h1>
-      <p class="start-copy" id="disclosure">This is a joke screen. Try again starts a video with sudden imagery and loud sound.</p>
       <button class="start-button" id="start-button" type="button">Try again</button>
+      <p class="playback-error" id="playback-error" role="status" hidden></p>
     </section>
   </main>
 
   <script>
     const video = document.getElementById("short-video");
     const startScreen = document.getElementById("start-screen");
-    const startCopy = document.getElementById("start-copy");
     const startButton = document.getElementById("start-button");
+    const playbackError = document.getElementById("playback-error");
     const main = document.querySelector("main");
     let minimumWaitElapsed = false;
     let videoReady = video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA;
@@ -169,6 +158,7 @@
 
     startButton.addEventListener("click", () => {
       main.classList.add("is-playing");
+      playbackError.hidden = true;
       video.muted = false;
       video.volume = 1;
       video.currentTime = 0;
@@ -183,9 +173,8 @@
         playbackRequest.then(() => {
           startScreen.hidden = true;
         }).catch(() => {
-          startCopy.textContent =
-            "Playback was blocked. Press the button to try again; your browser may require another tap.";
-          startButton.textContent = "Try again";
+          playbackError.textContent = "Playback couldn't start. Press Try again to retry.";
+          playbackError.hidden = false;
           startButton.disabled = false;
         });
       });
