@@ -71,6 +71,10 @@
       background: #30243c;
     }
 
+    .sound-button[hidden] {
+      display: none;
+    }
+
     .sound-button:focus-visible {
       outline: 3px solid #fff;
       outline-offset: 3px;
@@ -121,7 +125,7 @@
 
       try {
         await video.play();
-        soundButton.textContent = "Sound is on · Exit fullscreen with Esc";
+        soundButton.hidden = true;
         notice.hidden = true;
       } catch {
         video.muted = true;
