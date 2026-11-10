@@ -43,6 +43,71 @@
       background: #000;
     }
 
+    .start-screen {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      display: grid;
+      place-content: center;
+      justify-items: center;
+      gap: 20px;
+      padding: 24px;
+      background: #050505;
+      text-align: center;
+    }
+
+    .start-screen[hidden] {
+      display: none;
+    }
+
+    .spinner {
+      width: 42px;
+      height: 42px;
+      border: 4px solid #ffffff35;
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 800ms linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .start-copy {
+      max-width: 420px;
+      margin: 0;
+      color: #fff;
+      line-height: 1.55;
+    }
+
+    .start-button {
+      min-height: 48px;
+      padding: 11px 22px;
+      border: 0;
+      border-radius: 999px;
+      background: #c9a8ff;
+      color: #20172d;
+      font: inherit;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .start-button:focus-visible {
+      outline: 3px solid #fff;
+      outline-offset: 3px;
+    }
+
+    .start-screen[data-state="loading"] .start-copy,
+    .start-screen[data-state="loading"] .start-button {
+      display: none;
+    }
+
+    .start-screen[data-state="ready"] .spinner {
+      display: none;
+    }
+
     video {
       display: block;
       width: 100%;
@@ -51,92 +116,69 @@
       object-fit: contain;
     }
 
-    .sound-button {
-      position: absolute;
-      right: max(20px, env(safe-area-inset-right));
-      bottom: max(20px, env(safe-area-inset-bottom));
-      min-height: 46px;
-      padding: 10px 22px;
-      border: 1px solid #ffffff40;
-      border-radius: 999px;
-      background: #17131dcc;
-      color: #fff;
-      font: inherit;
-      font-weight: 750;
-      cursor: pointer;
-      backdrop-filter: blur(12px);
-    }
-
-    .sound-button:hover {
-      background: #30243c;
-    }
-
-    .sound-button[hidden] {
-      display: none;
-    }
-
-    .sound-button:focus-visible {
-      outline: 3px solid #fff;
-      outline-offset: 3px;
-    }
-
-    .notice {
-      position: absolute;
-      right: 20px;
-      bottom: max(78px, calc(env(safe-area-inset-bottom) + 70px));
-      left: 20px;
-      margin: 0;
-      color: #fff;
-      font-size: 0.9rem;
-      text-align: center;
-      text-shadow: 0 1px 5px #000;
-      pointer-events: none;
-    }
-
-    .notice[hidden] {
-      display: none;
-    }
   </style>
 </head>
 <body>
   <main>
-    <video id="short-video" autoplay muted loop playsinline preload="auto" disablepictureinpicture disableremoteplayback>
+    <video id="short-video" loop playsinline preload="auto" disablepictureinpicture disableremoteplayback>
       <source src="jumpscare-long.mp4" type="video/mp4">
       Your browser does not support HTML video.
     </video>
-    <p class="notice" id="notice">Autoplay starts muted · sudden imagery. Tap for sound and fullscreen.</p>
-    <button class="sound-button" id="sound-button" type="button">Turn sound on · Fullscreen</button>
+    <section class="start-screen" id="start-screen" data-state="loading" aria-live="polite">
+      <div class="spinner" role="status" aria-label="Loading video"></div>
+      <p class="start-copy" id="start-copy">
+        This video contains sudden jump-scare imagery and loud sound. Start playback with sound?
+      </p>
+      <button class="start-button" id="start-button" type="button">Play with sound</button>
+    </section>
   </main>
 
   <script>
     const video = document.getElementById("short-video");
-    const soundButton = document.getElementById("sound-button");
-    const notice = document.getElementById("notice");
+    const startScreen = document.getElementById("start-screen");
+    const startCopy = document.getElementById("start-copy");
+    const startButton = document.getElementById("start-button");
+    let minimumWaitElapsed = false;
+    let videoReady = video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA;
 
-    soundButton.addEventListener("click", async () => {
+    function showReadyScreenIfLoaded() {
+      if (!minimumWaitElapsed || !videoReady) return;
+      startScreen.dataset.state = "ready";
+      startButton.focus();
+    }
+
+    window.setTimeout(() => {
+      minimumWaitElapsed = true;
+      showReadyScreenIfLoaded();
+    }, 2000);
+
+    video.addEventListener("canplay", () => {
+      videoReady = true;
+      showReadyScreenIfLoaded();
+    }, { once: true });
+
+    startButton.addEventListener("click", () => {
       video.muted = false;
       video.volume = 1;
-      let fullscreenRequest;
-      try {
-        fullscreenRequest = document.documentElement.requestFullscreen?.();
-      } catch {
-        fullscreenRequest = undefined;
-      }
+      video.currentTime = 0;
+      const fullscreenRequest = document.documentElement.requestFullscreen?.();
+      const playbackRequest = video.play();
 
-      try {
-        await video.play();
-        soundButton.hidden = true;
-        notice.hidden = true;
-      } catch {
-        video.muted = true;
-        soundButton.textContent = "Tap to enable sound";
-      }
+      startButton.disabled = true;
+      startCopy.textContent = "Starting video…";
 
-      await fullscreenRequest?.catch(() => {});
-    });
-
-    video.play().catch(() => {
-      notice.textContent = "Tap to start the video.";
+      Promise.all([playbackRequest, fullscreenRequest]).then(() => {
+        startScreen.hidden = true;
+      }).catch(() => {
+        playbackRequest.then(() => {
+          startScreen.hidden = true;
+        }).catch(() => {
+          startCopy.textContent =
+            "Playback was blocked. Press the button to try again; your browser may require another tap.";
+          startButton.textContent = "Try again";
+          startButton.disabled = false;
+        });
+      });
     });
   </script>
 </body>
